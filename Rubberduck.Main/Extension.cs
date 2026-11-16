@@ -25,6 +25,8 @@ using Rubberduck.VBEditor.SafeComWrappers.Abstract;
 using Rubberduck.VBEditor.VbeRuntime;
 using System.IO.Abstractions;
 using Rubberduck.VersionCheck;
+using Rubberduck.ExternalTesting;
+using Rubberduck.UnitTesting.Execution;
 
 namespace Rubberduck
 {
@@ -54,6 +56,7 @@ namespace Rubberduck
 
         private IWindsorContainer _container;
         private App _app;
+        private ExternalTestPipeServer _externalTestServer;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public void OnAddInsUpdate(ref Array custom) { }
@@ -239,6 +242,12 @@ namespace Rubberduck
                 _app = _container.Resolve<App>();
                 _app.Startup();
 
+                if (string.Equals(Environment.GetEnvironmentVariable("RUBBERDUCK_TEST_PIPE"), "1", StringComparison.Ordinal))
+                {
+                    _externalTestServer = new ExternalTestPipeServer(_container.Resolve<IExternalTestExecutionService>());
+                    _externalTestServer.Start();
+                }
+
                 _isInitialized = true;
             }
             catch (Exception e)
@@ -270,6 +279,8 @@ namespace Rubberduck
             try
             {
                 _logger.Info("Rubberduck is shutting down.");
+                _externalTestServer?.Dispose();
+                _externalTestServer = null;
                 _logger.Trace("Unhooking VBENativeServices events...");
                 VbeNativeServices.UnhookEvents();
                 VbeProvider.Terminate();

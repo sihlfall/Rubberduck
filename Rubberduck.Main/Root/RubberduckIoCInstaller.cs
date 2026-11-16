@@ -17,6 +17,7 @@ using Rubberduck.CodeAnalysis.Inspections;
 using Rubberduck.CodeAnalysis.Inspections.Logistics;
 using Rubberduck.CodeAnalysis.QuickFixes;
 using Rubberduck.ComClientLibrary.UnitTesting;
+using Rubberduck.UnitTesting.Execution;
 using Rubberduck.Common;
 using Rubberduck.Common.Hotkeys;
 using Rubberduck.Parsing;
@@ -156,8 +157,12 @@ namespace Rubberduck.Root
 
             container.Register(Component.For<TestExplorerModel>()
                 .LifestyleSingleton());
-            container.Register(Component.For<IVBEInteraction>()
+            container.Register(Component.For<IVBEInteraction, IHostProcedureInvoker>()
                 .ImplementedBy<VBEInteraction>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<IExternalTestExecutionService>()
+                .ImplementedBy<ExternalTestExecutionService>()
                 .LifestyleSingleton());
 
 

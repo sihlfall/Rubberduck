@@ -8,11 +8,12 @@ using Rubberduck.VBEditor.SafeComWrappers.Abstract;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Rubberduck.UnitTesting.Execution;
 
 namespace Rubberduck.UnitTesting
 { 
     // FIXME litter some logging around here
-    internal class VBEInteraction : IVBEInteraction
+    internal class VBEInteraction : IVBEInteraction, IHostProcedureInvoker
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -29,21 +30,28 @@ namespace Rubberduck.UnitTesting
         {
             foreach (var declaration in declarations)
             {
-                _typeLibsApi.ExecuteCode(typeLib, declaration.QualifiedModuleName.ComponentName,
-                    declaration.QualifiedName.MemberName);
+                RunProcedure(typeLib, declaration.QualifiedModuleName.ComponentName, declaration.QualifiedName.MemberName);
             }
         }
 
         public void RunTestMethod(ITypeLibWrapper typeLib, TestMethod test, EventHandler<AssertCompletedEventArgs> assertCompletionHandler, out long duration)
         {
+            RunTestProcedure(typeLib, test.Declaration.ComponentName, test.Declaration.QualifiedName.MemberName, assertCompletionHandler, out duration);
+        }
+
+        public void RunProcedure(ITypeLibWrapper typeLib, string module, string procedure)
+        {
+            _typeLibsApi.ExecuteCode(typeLib, module, procedure);
+        }
+
+        public void RunTestProcedure(ITypeLibWrapper typeLib, string module, string procedure, EventHandler<AssertCompletedEventArgs> assertCompletionHandler, out long duration)
+        {
             AssertHandler.OnAssertCompleted += assertCompletionHandler;
             var stopwatch = new Stopwatch();
             try
             {
-                var testDeclaration = test.Declaration;
-
                 stopwatch.Start();
-                _typeLibsApi.ExecuteCode(typeLib, testDeclaration.ComponentName, testDeclaration.QualifiedName.MemberName);
+                RunProcedure(typeLib, module, procedure);
                 stopwatch.Stop();
 
                 duration = stopwatch.ElapsedMilliseconds;
